@@ -1,0 +1,140 @@
+<!doctype html>
+ 
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    
+    <title>Touch The Circle</title>
+    <meta name="description" content="${description}" />
+    
+    <style>*, *:before, *:after {
+  box-sizing: border-box; 
+}
+html {
+  font-size: 62.5%;
+}
+body {
+  color: #444;
+  background-color: hsl(0, 0%, 96%);
+}
+h1 {
+  font-size: 1.8rem;
+}
+
+</style>
+  </head>
+  <body>
+    <script src="https://cdn.jsdelivr.net/gh/phi-jp/phina.js@v0.2.3/build/phina.js"></script>
+    <script>// グローバルに展開
+phina.globalize();
+// 定数
+var TIME = 30000; // 制限時間
+/*
+ * メインシーン
+ */
+phina.define("MainScene", {
+  // 継承
+  superClass: 'DisplayScene',
+  // 初期化
+  init: function() {
+    // 親クラス初期化
+    this.superInit();
+    // 背景色
+    this.backgroundColor = 'black';
+    // グループ
+    this.circleGroup = DisplayElement().addChildTo(this);
+    // 経過時間
+    this.time = TIME;
+    // スコア
+    this.score = 0;
+    // タイマーラベル
+    this.timerLabel = Label({
+      text: (this.time / 1000).toFixed(3),
+      fontSize: 48,
+      fill: 'yellow',
+    }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.span(1.5));
+    // カウントラベル
+    var countLabel = Label({
+      text: '',
+      fontSize: 128,
+      fill: 'yellow',
+    }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center());
+    // 配置
+    this.locateCircles();
+    // カウントダウンスタート
+    countLabel.tweener.set({text: '3', alpha: 0}).fadeIn(1000)
+                      .set({text: '2', alpha: 0}).fadeIn(1000)
+                      .set({text: '1', alpha: 0}).fadeIn(1000)
+                      .call(function() {
+                        countLabel.hide();
+                        this.update = this.timer;
+                        // 最初の円選択
+                        this.pickupCircle();
+                      }, this).play();
+  },
+  // 毎フレーム更新処理
+  timer: function(app) {
+    // 終了判定
+    if (this.time < 0) {
+      // リザルトシーンへ
+      this.exit({
+        score: this.score,
+        url: 'https://alkn203.github.io/touchthecircle/'
+      });
+    }
+    // 経過時間を差し引く
+    this.time -= app.deltaTime;
+    // 残り秒数表示
+    this.timerLabel.text = (this.time / 1000).toFixed(3);
+  },
+  // 円配置
+  locateCircles: function() {
+    var self = this;
+    var r = 250;
+    // 円配置
+    Array.range(0, 360, 30).each(function(deg) {
+      var rad = Math.degToRad(deg);
+      var x = self.gridX.center() + r * Math.cos(rad);
+      var y = self.gridY.center() + r * Math.sin(rad);
+
+      var circle = CircleShape({fill: '#7fffd4'}).addChildTo(self.circleGroup);
+      circle.setPosition(x, y);
+      circle.alpha = 0.25;
+      // タッチイベント
+      circle.onpointstart = function() {
+        Wave().addChildTo(self).setPosition(circle.x, circle.y);
+        circle.setInteractive(false);
+        circle.alpha = 0.25;
+        // スコア加算
+        self.score++;
+        // 次の円
+        self.pickupCircle();
+      };
+    });
+  },
+  // ランダムに円選択
+  pickupCircle: function() {
+    var target = this.circleGroup.children.random();
+    target.alpha = 1.0;
+    // タッチ可能にする
+    target.setInteractive(true);
+  },
+});
+/*
+ * メイン処理
+ */
+phina.main(function() {
+  // アプリケーションを生成
+  var app = GameApp({
+    title: 'Touch the Circle'
+    // MainScene から開始
+    //startLabel: 'main',
+  });
+  // 実行
+  app.run();
+});</script>
+  </body>
+</html>
+
